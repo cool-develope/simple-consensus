@@ -1,0 +1,9 @@
+[package]
+name = "simple-consensus"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.31", features = ["derive"] }
+libp2p = "0.55.0"
+tokio = "1.43.0"
