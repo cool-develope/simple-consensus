@@ -5,5 +5,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.31", features = ["derive"] }
-libp2p = "0.55.0"
-tokio = "1.43.0"
+futures = "0.3.31"
+libp2p = { version = "0.55.0", features = ["tokio", "yamux", "cbor", "serde", "noise", "identify", "tcp", "kad", "gossipsub", "request-response", "macros"] }
+serde = { version = "1.0.218", features = ["derive"] }
+tokio = { version = "1.43.0", features = ["full"] }

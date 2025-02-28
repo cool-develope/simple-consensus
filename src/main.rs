@@ -1,25 +1,33 @@
-use crate::cli::{commands, Cli, Commands};
+use crate::cli::{commands::Commands, Cli};
 use clap::Parser;
 
 mod cli;
+mod consensus;
 
-fn main() {
-    // Parse the command-line arguments using the clap parser.
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Parse command-line arguments using Clap.
     let cli = Cli::parse();
 
-    // Dispatch the execution to the appropriate command handler based on the parsed subcommand.
-    let result = match cli.command {
-        Commands::Start { config_file } => commands::start(config_file),
-        Commands::Join {
+    // Create a Commands instance that internally initializes the network manager.
+    let mut commands = Commands::new().await?;
+
+    // Dispatch to the appropriate command method based on the subcommand.
+    match cli.command {
+        cli::Commands::Start { config_file } => {
+            commands.start(config_file).await?;
+        }
+        cli::Commands::Join {
             config_file,
             node_address,
-        } => commands::join(config_file, node_address),
-        Commands::Status { node_address } => commands::status(node_address),
-    };
-
-    // Handle the result of the command execution.
-    match result {
-        Ok(_) => println!("Command executed successfully."),
-        Err(e) => eprintln!("Error: {}", e),
+        } => {
+            commands.join(config_file, node_address).await?;
+        }
+        cli::Commands::Status { node_address: _ } => {
+            // In our embedded version, status may not require a node address parameter.
+            commands.status().await?;
+        }
     }
+
+    Ok(())
 }
