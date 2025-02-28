@@ -81,6 +81,9 @@ pub enum NetworkCommand {
         addr: Multiaddr,
         response: oneshot::Sender<Result<(), Box<dyn Error + Send>>>,
     },
+    GetLocalPeerId {
+        response: oneshot::Sender<Result<PeerId, Box<dyn Error + Send>>>,
+    },
     Broadcast(Vec<u8>),
     SendVoteRequest {
         peer_id: PeerId,
@@ -204,13 +207,13 @@ impl EventLoop {
 
     async fn handle_swarm_event(&mut self, event: SwarmEvent<NetworkBehaviourEvent>) {
         match event {
-            _ => { /* Handle swarm events */}
+            _ => { /* Handle swarm events */ }
         }
     }
 
     async fn handle_command(&mut self, command: NetworkCommand) {
         match command {
-            _ => { /* Handle network commands */}
+            _ => { /* Handle network commands */ }
         }
     }
 }
