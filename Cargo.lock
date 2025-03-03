@@ -2907,6 +2907,7 @@ dependencies = [
  "libp2p",
  "serde",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
