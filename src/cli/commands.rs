@@ -27,11 +27,11 @@ impl Commands {
         let listen_addr: Multiaddr = "/ip4/0.0.0.0/tcp/0".parse()?;
         let (resp_tx, resp_rx) = oneshot::channel();
         self.network_manager
-            .command_sender()
-            .try_send(NetworkCommand::StartListening {
+            .send_command(NetworkCommand::StartListening {
                 addr: listen_addr,
                 response: resp_tx,
-            })?;
+            })
+            .await?;
         // Wait for confirmation that listening has started.
         resp_rx.await?.unwrap();
 
@@ -61,12 +61,12 @@ impl Commands {
         let addr = Multiaddr::from_str(&node_address)?;
         let (resp_tx, resp_rx) = oneshot::channel();
         self.network_manager
-            .command_sender()
-            .try_send(NetworkCommand::DialPeer {
+            .send_command(NetworkCommand::DialPeer {
                 peer_id,
                 addr,
                 response: resp_tx,
-            })?;
+            })
+            .await?;
         resp_rx.await?.unwrap();
         Ok(())
     }
@@ -76,8 +76,8 @@ impl Commands {
     pub async fn status(&mut self) -> Result<(), Box<dyn Error>> {
         let (tx, rx) = oneshot::channel();
         self.network_manager
-            .command_sender()
-            .try_send(NetworkCommand::GetLocalPeerId { response: tx })?;
+            .send_command(NetworkCommand::GetLocalPeerId { response: tx })
+            .await?;
         let peer_id = rx.await?;
         println!("Current local peer id: {}", peer_id.unwrap());
         Ok(())
