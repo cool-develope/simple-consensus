@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 pub mod commands;
+mod config;
 
 /// The top-level CLI structure for the simple consensus application.
 #[derive(Parser)]

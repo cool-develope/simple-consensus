@@ -1,4 +1,4 @@
-use crate::consensus::message::{ConsensusMessage, VoteRequest, VoteResponse};
+use crate::consensus::message::{ConsensusMessage, NetworkCommand, VoteRequest, VoteResponse};
 use futures::StreamExt;
 use libp2p::{
     core::{muxing::StreamMuxerBox, transport::Boxed, upgrade},
@@ -71,39 +71,7 @@ pub enum NetworkEvent {
     },
 }
 
-#[derive(Debug)]
-pub enum NetworkCommand {
-    StartListening {
-        addr: Multiaddr,
-        response: oneshot::Sender<Result<(), Box<dyn Error + Send>>>,
-    },
-    DialPeer {
-        peer_id: PeerId,
-        addr: Multiaddr,
-        response: oneshot::Sender<Result<(), Box<dyn Error + Send>>>,
-    },
-    GetLocalPeerId {
-        response: oneshot::Sender<Result<PeerId, Box<dyn Error + Send>>>,
-    },
-    Broadcast(Vec<u8>),
-    SendVoteRequest {
-        peer_id: PeerId,
-        request: VoteRequest,
-        response: oneshot::Sender<Result<VoteResponse, Box<dyn Error + Send>>>,
-    },
-    RespondVote {
-        response: VoteResponse,
-        channel: ResponseChannel<VoteResponse>,
-    },
-    GetValue {
-        key: String,
-        response_channel: oneshot::Sender<Result<Option<Vec<u8>>, Box<dyn Error + Send>>>,
-    },
-    PutValue {
-        key: String,
-        value: Vec<u8>,
-    },
-}
+
 
 pub struct NetworkManager {
     command_sender: mpsc::Sender<NetworkCommand>,
@@ -111,11 +79,12 @@ pub struct NetworkManager {
 }
 
 impl NetworkManager {
-    pub async fn new(local_key: identity::Keypair) -> Result<Self, Box<dyn Error>> {
+    pub async fn new(secret_key:[u8;32]) -> Result<Self, Box<dyn Error>> {
+        let local_key = libp2p::identity::Keypair::ed25519_from_bytes(secret_key).unwrap();
         let (command_sender, command_receiver) = mpsc::channel(10);
         let (event_sender, event_receiver) = mpsc::channel(10);
 
-        let swarm = SwarmBuilder::with_existing_identity(local_key.clone())
+        let swarm = SwarmBuilder::with_existing_identity(local_key)
             .with_tokio()
             .with_tcp(
                 tcp::Config::default(),
@@ -387,13 +356,38 @@ impl EventLoop {
     async fn handle_command(&mut self, command: NetworkCommand) {
         info!("Handling command: {:?}", command);
         match command {
-            NetworkCommand::StartListening { addr, response } => {
+            NetworkCommand::StartListening { addr, bootstrap_nodes, response } => {
                 // Try to start listening on the provided address.
                 let result = self.swarm.listen_on(addr.clone());
                 match result {
                     Ok(_listener_id) => {
                         // ListenerId is not used in this example, but could be used to manage listeners.
                         info!("Listening on {:?}", addr);
+                        // Add bootstrap nodes to Kademlia routing table.
+                        for addr in bootstrap_nodes {
+                            let peer_id = match addr.iter().find_map(|p| {
+                                if let libp2p::multiaddr::Protocol::P2p(peer_id) = p {
+                                    Some(peer_id)
+                                } else {
+                                    None
+                                }
+                            }) {
+                                Some(peer_id) => peer_id,
+                                None => {
+                                    error!("Failed to extract peer ID from bootstrap node address");
+                                    continue;
+                                }
+                            };
+                            self.swarm
+                                .behaviour_mut()
+                                .kademlia
+                                .add_address(&peer_id, addr.clone());
+                        }
+
+                        if let Err(e) = self.swarm.behaviour_mut().kademlia.bootstrap() {
+                            error!("Failed to bootstrap Kademlia: {:?}", e);
+                        }
+
                         // Send back a success response.
                         if let Err(e) = response.send(Ok(())) {
                             error!("Failed to send StartListening response: {:?}", e);
