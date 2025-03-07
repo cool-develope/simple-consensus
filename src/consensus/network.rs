@@ -71,15 +71,13 @@ pub enum NetworkEvent {
     },
 }
 
-
-
 pub struct NetworkManager {
     command_sender: mpsc::Sender<NetworkCommand>,
     event_receiver: mpsc::Receiver<NetworkEvent>,
 }
 
 impl NetworkManager {
-    pub async fn new(secret_key:[u8;32]) -> Result<Self, Box<dyn Error>> {
+    pub async fn new(secret_key: [u8; 32]) -> Result<Self, Box<dyn Error>> {
         let local_key = libp2p::identity::Keypair::ed25519_from_bytes(secret_key).unwrap();
         let (command_sender, command_receiver) = mpsc::channel(10);
         let (event_sender, event_receiver) = mpsc::channel(10);
@@ -356,7 +354,11 @@ impl EventLoop {
     async fn handle_command(&mut self, command: NetworkCommand) {
         info!("Handling command: {:?}", command);
         match command {
-            NetworkCommand::StartListening { addr, bootstrap_nodes, response } => {
+            NetworkCommand::StartListening {
+                addr,
+                bootstrap_nodes,
+                response,
+            } => {
                 // Try to start listening on the provided address.
                 let result = self.swarm.listen_on(addr.clone());
                 match result {

@@ -1,10 +1,7 @@
-use libp2p::{
-    request_response::ResponseChannel,
-    Multiaddr, PeerId
-};
-use tokio::sync::oneshot;
+use libp2p::{request_response::ResponseChannel, Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use tokio::sync::oneshot;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ConsensusMessage {

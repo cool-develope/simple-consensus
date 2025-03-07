@@ -1,9 +1,8 @@
-use crate::consensus::message::NetworkCommand;
 use crate::cli::config::Config;
+use crate::consensus::message::NetworkCommand;
 use libp2p::{Multiaddr, PeerId};
 use std::{error::Error, str::FromStr};
 use tokio::sync::oneshot;
-
 
 /// Starts a new node in the consensus cluster.
 /// This method sends a StartListening command and then prints any network events.
@@ -95,4 +94,3 @@ pub async fn get(&mut self, key: String) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 */
-
