@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tokio::sync::oneshot;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ConsensusMessage {
     Proposal { id: String, content: String },
     Vote { proposal_id: String, vote: bool },
