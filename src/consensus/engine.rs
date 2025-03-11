@@ -48,16 +48,24 @@ pub struct Engine {
     leader: Arc<Mutex<PeerId>>,
 }
 
+pub struct EngineConfig {
+    pub secret_key: [u8; 32],
+    pub listen_address: String,
+    pub bootstrap_nodes: Vec<String>,
+}
+
 impl Engine {
     /// Starts the node by creating the network manager, starting the listening service,
     /// and spawning background tasks for handling network events and leader election.
-    pub async fn new(
-        secret_key: [u8; 32],
-        listen_addr: Multiaddr,
-        bootstrap_nodes: Vec<Multiaddr>,
-    ) -> Result<Self, Box<dyn Error>> {
+    pub async fn new(config: EngineConfig) -> Result<Self, Box<dyn Error>> {
+        let listen_addr = config.listen_address.parse()?;
+        let bootstrap_nodes = config
+            .bootstrap_nodes
+            .into_iter()
+            .map(|addr| addr.parse())
+            .collect::<Result<Vec<_>, _>>()?;
         // Create a network manager.
-        let network_manager = NetworkManager::new(secret_key).await?;
+        let network_manager = NetworkManager::new(config.secret_key).await?;
         let network_manager = Arc::new(Mutex::new(network_manager));
 
         // Send a StartListening command.
@@ -290,7 +298,12 @@ impl Engine {
     }
 
     /// Returns the set of connected peer IDs.
-    pub async fn get_connected_peers(&self) -> HashSet<PeerId> {
-        self.connected_peers.lock().await.clone()
+    pub async fn get_connected_peers(&self) -> HashSet<String> {
+        self.connected_peers
+            .lock()
+            .await
+            .iter()
+            .map(|peer_id| peer_id.to_string())
+            .collect()
     }
 }
